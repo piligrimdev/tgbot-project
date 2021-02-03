@@ -14,7 +14,7 @@ else:
         config = json.load(conf_file)
 bot = BotHandler(config)
 
-def check():
+async def check():
     print("MESSAGE GET!")
 
 if __name__ == "__main__":
@@ -29,7 +29,7 @@ if __name__ == "__main__":
             conf_file.close()
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
-            web.run_app(app, config["webhook_url"], config["webhook_port"])
+            web.run_app(app, host=config["webhook_url"], port=config["webhook_port"])
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
