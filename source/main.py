@@ -5,6 +5,7 @@ from aiohttp import web
 import os
 import json
 
+PORT = int(os.environ.get('PORT', 5000))
 config = ""
 if os.environ.get("HEROKU") is not None:
     with open("source/Bot/bot_config.json", "r") as conf_file:
@@ -29,7 +30,7 @@ if __name__ == "__main__":
             conf_file.close()
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
-            web.run_app(app, host="0.0.0.0/" + config["token"], port=config["webhook_port"])
+            web.run_app(app, host="0.0.0.0/" + config["token"], port=PORT)
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
