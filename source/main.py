@@ -24,7 +24,7 @@ if __name__ == "__main__":
         if status == True:
             print("WEBHOOK OK")
             config["isWebHookOk"] = 1
-            json.dumps(config, conf_file)
+            json.dump(config, conf_file)
             app = aiohttp.web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
             aiohttp.web.run_app(app, config["webhook_url"], config["webhook_port"])
