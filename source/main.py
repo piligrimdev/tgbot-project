@@ -1,7 +1,7 @@
 from Bot.BotHandler import *
 
 import asyncio
-import aiohttp
+from aiohttp import web
 import os
 import json
 
@@ -27,9 +27,9 @@ if __name__ == "__main__":
             conf_file = open("source/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
-            app = aiohttp.web.Application()
+            app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
-            aiohttp.web.run_app(app, config["webhook_url"], config["webhook_port"])
+            web.run_app(app, config["webhook_url"], config["webhook_port"])
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
