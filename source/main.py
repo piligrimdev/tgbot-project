@@ -5,8 +5,13 @@ import aiohttp
 import os
 import json
 
-with open("Bot/bot_config.json", "r") as conf_file:
-    config = json.load(conf_file)
+config = ""
+if os.environ.get("HEROKU") is not None:
+    with open("source/Bot/bot_config.json", "r") as conf_file:
+        config = json.load(conf_file)
+else:
+    with open("Bot/bot_config.json", "r") as conf_file:
+        config = json.load(conf_file)
 bot = BotHandler(config)
 
 def check():
