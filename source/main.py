@@ -29,7 +29,7 @@ if __name__ == "__main__":
             conf_file.close()
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
-            web.run_app(app, host=config["webhook_url"], port=config["webhook_port"])
+            web.run_app(app, port=config["webhook_port"])
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
