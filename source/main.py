@@ -10,9 +10,14 @@ config = ""
 if os.environ.get("HEROKU") is not None:
     with open("source/Bot/bot_config.json", "r") as conf_file:
         config = json.load(conf_file)
+        config["webhook_port"] = str(PORT)
+        json.dump(config, conf_file)
 else:
     with open("Bot/bot_config.json", "r") as conf_file:
         config = json.load(conf_file)
+        config["webhook_port"] = "8443"
+        json.dump(config, conf_file)
+
 bot = BotHandler(config)
 
 async def check(request):
@@ -30,9 +35,7 @@ if __name__ == "__main__":
             conf_file.close()
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
-            web.run_app(app, host="0.0.0.0", port=8443)
-            app1 = web.Application()
-            web.run_app(app1, host="0.0.0.0", port=PORT)
+            web.run_app(app, host="0.0.0.0", port=PORT)
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
