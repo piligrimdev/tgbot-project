@@ -8,12 +8,12 @@ import json
 PORT = int(os.environ.get('PORT', 5000))
 config = ""
 if os.environ.get("HEROKU") is not None:
-    with open("source/Bot/bot_config.json", "r") as conf_file:
+    with open("source/Bot/bot_config.json", "rw") as conf_file:
         config = json.load(conf_file)
         config["webhook_port"] = str(PORT)
         json.dump(config, conf_file)
 else:
-    with open("Bot/bot_config.json", "r") as conf_file:
+    with open("Bot/bot_config.json", "rw") as conf_file:
         config = json.load(conf_file)
         config["webhook_port"] = "8443"
         json.dump(config, conf_file)
