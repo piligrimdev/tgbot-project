@@ -14,7 +14,7 @@ else:
         config = json.load(conf_file)
 bot = BotHandler(config)
 
-async def check():
+async def check(request):
     print("MESSAGE GET!")
 
 if __name__ == "__main__":
