@@ -1,11 +1,12 @@
 import json
 import requests
-class BotHandler:
-    def __init__(self):
+import asyncio
+import aiohttp
 
-        self.config = {}
-        with open("Bot/bot_config.json", "r") as conf_file:
-            self.config = json.load(conf_file)
+class BotHandler:
+    def __init__(self, conf):
+
+        self.config = conf
         self.url = "https://api.telegram.org/bot" + self.config["token"] + "/"
         self.lastUpdateId = self.config["lastUpdateId"]
         self.debug = self.config["lastUpdateId"]
@@ -38,3 +39,19 @@ class BotHandler:
 
     def sendMessage(self, id, text):
         return self.session.post(self.url + "sendMessage", {"chat_id": id, "text": text})
+
+    def check_webhook(self):
+        if self.config["isWebHookOk"] == 1:
+            status = self.session.get(self.url + "getWebhookInfo")
+            status = status.json()
+            if status["ok"] == True:
+                return True
+            else:
+                return False
+        else:
+            status = self.session.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + ":" + self.config["webhook_port"] + "/" + self.config["token"] + "/")
+            status = status.json()
+            if status["ok"] == True:
+                return True
+            else:
+                return status["error_code"]
