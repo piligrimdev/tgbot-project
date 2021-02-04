@@ -20,6 +20,7 @@ bot = BotHandler(config)
 
 async def check(request):
     print("MESSAGE GET!")
+    return web.Response()
 
 if __name__ == "__main__":
     status = ""
