@@ -49,7 +49,7 @@ class BotHandler:
             else:
                 return False
         else:
-            status = self.session.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + ":" + self.config["webhook_port"] + "/" + self.config["token"] + "/")
+            status = self.session.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + "/" + self.config["token"] + "/")
             status = status.json()
             if status["ok"] == True:
                 return True

@@ -31,9 +31,16 @@ if __name__ == "__main__":
             conf_file = open("source/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
+
+
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
             web.run_app(app, host="0.0.0.0", port=PORT)
+
+
+
+        else:
+            print(status)
     else:
         print("WEBHOOK NOT OK:  " + status)
         while True:
