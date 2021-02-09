@@ -7,6 +7,7 @@ import json
 
 PORT = int(os.environ.get('PORT', 5000))
 config = ""
+
 if os.environ.get("HEROKU") is not None:
     with open("source/Bot/bot_config.json", "r") as conf_file:
         config = json.load(conf_file)
@@ -38,14 +39,24 @@ if __name__ == "__main__":
             app.router.add_post("/" + config["token"] + "/", check)
             web.run_app(app, host="0.0.0.0", port=PORT)
 
-
-
+        else:
+            print("WEBHOOK NOT OK: " + status)
+            config["isWebHookOk"] = 0
+            conf_file = open("source/Bot/bot_config.json", "w")
+            json.dump(config, conf_file)
+            conf_file.close()
+    else:
+        print("LOCAL MACHINE")
+        status = bot.delete_webhook()
+        if status:
+            config["isWebHookOk"] = 0
+            conf_file = open("source/Bot/bot_config.json", "w")
+            json.dump(config, conf_file)
+            conf_file.close()
+            while True:
+                updates = bot.getUpdates()
+                if updates is not None:
+                    for i in updates:
+                        bot.sendMessage(i["message"]["from"]["id"], "test")
         else:
             print(status)
-    else:
-        print("WEBHOOK NOT OK:  " + status)
-        while True:
-            updates = bot.getUpdates()
-            if updates is not None:
-                for i in updates:
-                    bot.sendMessage(i["message"]["from"]["id"], "test")

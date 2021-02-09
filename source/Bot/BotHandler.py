@@ -55,3 +55,16 @@ class BotHandler:
                 return True
             else:
                 return status["error_code"]
+
+    def delete_webhook(self):
+        status = self.session.get(self.url + "getWebhookInfo")
+        status = status.json()
+        if status["ok"] == True:
+            status = self.session.get(self.url + "deleteWebhook")
+            status= status.json()
+            if status["ok"] == True:
+                return True
+            else:
+                return status["error_code"]
+        else:
+            return True
