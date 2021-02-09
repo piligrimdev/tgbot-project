@@ -19,5 +19,16 @@ class Spotify:
     def audio_features(self, id):
         return self.session.get(self.url + "audio-features/{0}".format(id), headers=self.headers)
 
-    def similar_artist(self, seed_artist):
-        return self.session.get(self.url + "recommendations/?seed_artists={0}".format(seed_artist), headers=self.headers)
+    def similar_artist(self, parms):
+
+            parms_str = "?"
+            for key, value in parms.items():
+                parms_str += key + "=" + value + "&"
+            parms_str = parms_str[:-1]
+
+            if parms_str.find("seed_artist") != -1 or parms_str.find("seed_genres") != -1 or parms_str.find("seed_tracks") != -1:
+                return self.session.get(self.url + "recommendations/"+ parms_str,
+                                        headers=self.headers)
+            else:
+                print("Seed artists, genres, or tracks required")
+                return None
