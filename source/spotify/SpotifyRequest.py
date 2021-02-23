@@ -34,62 +34,95 @@ def parseUrlParams(url):
     return dict(parse.parse_qsl(parse.urlsplit(url).query))
 
 class Spotify:
-    def __init__(self, conf, auth=False, uri=None):
+    def __init__(self):
         self.session = requests.Session()
-        self.url = 'https://api.spotify.com/v1/'
-        self.code = ""
-        if not auth:
-            data = self.session.post('https://accounts.spotify.com/api/token', {'grant_type': 'client_credentials',
-                                                                            'scopes': 'playlist-modify-public',
-                                                                            'client_id': conf['CLIENT_ID'],
-                                                                            'client_secret': conf[
-                                                                                'CLIENT_SECRET']}).json()
-            self.headers = {
-                'Authorization': 'Bearer {token}'.format(token=data['access_token']),
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-                }
+        self.apiUrl = 'https://api.spotify.com/v1/'
+        self.headers = {
+            'Authorization': 'Bearer {}',
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        self.authToken, self.refreshToken = None, None
+        self.expiresIn = None
+
+    def clientAuth(self, conf):
+
+        s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
+        utf = s.encode("utf-8")
+        byt = base64.b64encode(utf).decode('utf-8')
+
+        headers = self.headers
+        headers['Authorization'] = 'Basic {}'.format(byt)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+        payload = {
+            'grant_type': 'client_credentials',
+            'client_id': conf['CLIENT_ID'],
+            'client_secret': conf['CLIENT_SECRET']
+        }
+
+        data = self.session.post('https://accounts.spotify.com/api/token',
+                                 data=payload,
+                                 headers=headers
+                                 ).json()
+        if data.ok:
+            self.authToken = data['access_token']
+            self.expiresIn = data['expires_in']
+            return True
         else:
-            self.id = conf["CLIENT_ID"]
-            self.uri = uri
-            data = self.session.get("https://accounts.spotify.com/authorize?client_id={}&response_type=code&redirect_uri={}&scope={}".format(self.id, uri, "playlist-modify-public"))
+            print(data.text['error'] + ': ' + data.text['error_description'])
+            return False
+
+    def userAuth(self, conf, host, port, redirect, scope):
+            payload = {
+                'client_id': conf['CLIENT_ID'],
+                'response_type': 'code',
+                'redirect_uri': redirect,
+                'scope': scope
+            }
+
+            strPayload = '?client_id={}&response_type=code&redirect_uri={}&scope={}'.format(conf['CLIENT_ID'], redirect, scope)
+            data = self.session.get("https://accounts.spotify.com/authorize" + strPayload)
+
             if data.ok:
-
-                webUrl = data.url
-
-                server = HTTPServer(("localhost",8080), RequestHandler)
+                server = HTTPServer((host, port), RequestHandler)
                 server.code = None
-                webbrowser.open(webUrl)
+
+                webbrowser.open(data.url)
+
                 server.handle_request()
+
                 s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
                 utf = s.encode("utf-8")
                 byt = base64.b64encode(utf).decode('utf-8')
-                data = self.session.post('https://accounts.spotify.com/api/token',
-                                         data={
-                                             "grant_type": "authorization_code",
-                                             "code": server.code,
-                                             "redirect_uri": self.uri
-                                         },
-                                         headers={
-                'Authorization': 'Basic {}'.format(byt),
-                "Accept": "application/json",
-                "Content-Type": "application/x-www-form-urlencoded"
+
+                payload = {
+                    "grant_type": "authorization_code",
+                    "code": server.code,
+                    "redirect_uri": redirect
                 }
 
-                )
-                dataJson = data.json()
+                headers = self.headers
+                headers['Authorization'] = 'Basic {}'.format(byt)
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+                data = self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
+
+
                 if data.ok:
-                    self.refresh_token = dataJson['refresh_token']
-                    self.headers = {
-                        'Authorization': 'Bearer {token}'.format(token=dataJson['access_token']),
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    }
+                    self.refreshToken = data.json()['refresh_token']
+                    self.authToken = data.json()['access_token']
+                    self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
+                    return True
+                else:
+                    error = json.loads(data.text)
+                    print(error['error'] + ': ' + error['error_description'])
+                    return False
 
 
 
     def audio_features(self, id):
-        return self.session.get(self.url + "audio-features/{0}".format(id), headers=self.headers)
+        return self.session.get(self.apiUrl + "audio-features/{0}".format(id), headers=self.headers)
 
 
     def similar_artist(self, parms):
@@ -102,7 +135,7 @@ class Spotify:
 
         if params_str.find("seed_artist") != -1 or params_str.find("seed_genres") != -1 or params_str.find(
                 "seed_tracks") != -1:
-            return self.session.get(self.url + "recommendations/" + params_str,
+            return self.session.get(self.apiUrl + "recommendations/" + params_str,
                                     headers=self.headers)
         else:
             print("Seed artists, genres, or tracks required")
@@ -117,10 +150,9 @@ class Spotify:
             body["description"] = decription
         uris = str()
         for i in tracks:
-            uris += i + "%2C"
+            uris += i + ","
         uris = uris[:-1]
-        uris = uris.replace(":", "%3A")
-        response = self.session.post(self.url + "users/" + id + '/playlists', json=body, headers=self.headers)
+        response = self.session.post(self.apiUrl + "users/" + id + '/playlists', json=body, headers=self.headers)
         playlistId = response.json()['id']
-        response1 = self.session.post(self.url + "playlists/" + playlistId + '/tracks?',json={"uris": tracks, 'position': '0'}, headers=self.headers)
+        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks?',json={"uris": tracks, 'position': '0'}, headers=self.headers)
         print(response1)
