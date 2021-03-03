@@ -11,6 +11,16 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.server.code = parseUrlParams(self.path)['code']
 
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+
+        self.wfile.write("""<html>
+        <body>
+        This window can be closed.
+        </body>
+        </html>""".encode("utf-8"))
+
 
 def listOfTracks(data):
     uris = list()
@@ -64,10 +74,11 @@ class Spotify:
         data = self.session.post('https://accounts.spotify.com/api/token',
                                  data=payload,
                                  headers=headers
-                                 ).json()
+                                 )
         if data.ok:
-            self.authToken = data['access_token']
-            self.expiresIn = data['expires_in']
+            self.authToken = data.json()['access_token']
+            self.expiresIn = data.json()['expires_in']
+            self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
             return True
         else:
             print(data.text['error'] + ': ' + data.text['error_description'])
@@ -124,19 +135,12 @@ class Spotify:
     def audio_features(self, id):
         return self.session.get(self.apiUrl + "audio-features/{0}".format(id), headers=self.headers)
 
-
     def similar_artist(self, parms):
 
-        params_str = "?"
-
-        for key, value in parms.items():
-            params_str += key + "=" + value + "&"
-        params_str = params_str[:-1]
-
-        if params_str.find("seed_artist") != -1 or params_str.find("seed_genres") != -1 or params_str.find(
-                "seed_tracks") != -1:
-            return self.session.get(self.apiUrl + "recommendations/" + params_str,
-                                    headers=self.headers)
+        if "seed_artist" in parms.keys() or \
+            "seed_genres" in parms.keys() or \
+                "seed_tracks" in parms.keys():
+                    return self.session.get(self.apiUrl + "recommendations", params=parms, headers=self.headers)
         else:
             print("Seed artists, genres, or tracks required")
             return None
@@ -154,5 +158,5 @@ class Spotify:
         uris = uris[:-1]
         response = self.session.post(self.apiUrl + "users/" + id + '/playlists', json=body, headers=self.headers)
         playlistId = response.json()['id']
-        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks?',json={"uris": tracks, 'position': '0'}, headers=self.headers)
+        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": tracks, 'position': '0'}, headers=self.headers)
         print(response1)
