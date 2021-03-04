@@ -87,7 +87,7 @@ class Spotify:
     def userAuth(self, conf, host, port, redirect, scope):
             payload = {
                 'client_id': conf['CLIENT_ID'],
-                'response_type': 'code',
+                'response_type': 'code',                    """СДЕЛАЙ НОРМАЛЬНО!"""
                 'redirect_uri': redirect,
                 'scope': scope
             }
@@ -134,6 +134,28 @@ class Spotify:
 
     def audio_features(self, id):
         return self.session.get(self.apiUrl + "audio-features/{0}".format(id), headers=self.headers)
+
+    def get_all_users_saved_tracks(self):
+
+        payload = {
+            "offset": "0",
+            "limit": "50"
+        }
+        nextStr = self.apiUrl + "me/tracks"
+        track_list = list()
+        while True:
+            data = self.session.get(nextStr, params=payload, headers=self.headers)
+            if data.ok:
+                json = data.json()
+                for i in json['items']:
+                    track_list.append(i['track']["uri"])
+                if json['next'] is not None:
+                    nextStr = json['next']
+                else:
+                    return track_list
+            else:
+                return
+
 
     def similar_artist(self, parms):
 
