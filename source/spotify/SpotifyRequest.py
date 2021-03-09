@@ -16,6 +16,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         self.wfile.write("""<html>
+        <head>
+        <title>Spotify Authorization</title>
+        </head>
         <body>
         This window can be closed.
         </body>
@@ -75,6 +78,7 @@ class Spotify:
                                  data=payload,
                                  headers=headers
                                  )
+
         if data.ok:
             self.authToken = data.json()['access_token']
             self.expiresIn = data.json()['expires_in']
@@ -85,50 +89,49 @@ class Spotify:
             return False
 
     def userAuth(self, conf, host, port, redirect, scope):
-            payload = {
+        payload = {
                 'client_id': conf['CLIENT_ID'],
-                'response_type': 'code',                    """СДЕЛАЙ НОРМАЛЬНО!"""
+                'response_type': 'code',
                 'redirect_uri': redirect,
                 'scope': scope
             }
 
-            strPayload = '?client_id={}&response_type=code&redirect_uri={}&scope={}'.format(conf['CLIENT_ID'], redirect, scope)
-            data = self.session.get("https://accounts.spotify.com/authorize" + strPayload)
+        data = self.session.get("https://accounts.spotify.com/authorize", params=payload)
 
-            if data.ok:
-                server = HTTPServer((host, port), RequestHandler)
-                server.code = None
+        if data.ok:
+            server = HTTPServer((host, port), RequestHandler)
+            server.code = None
 
-                webbrowser.open(data.url)
+            webbrowser.open(data.url)
 
-                server.handle_request()
+            server.handle_request()
 
-                s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
-                utf = s.encode("utf-8")
-                byt = base64.b64encode(utf).decode('utf-8')
+            s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
+            utf = s.encode("utf-8")
+            byt = base64.b64encode(utf).decode('utf-8')
 
-                payload = {
+            payload = {
                     "grant_type": "authorization_code",
                     "code": server.code,
                     "redirect_uri": redirect
                 }
 
-                headers = self.headers
-                headers['Authorization'] = 'Basic {}'.format(byt)
-                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            headers = self.headers
+            headers['Authorization'] = 'Basic {}'.format(byt)
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-                data = self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
+            data = self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
 
 
-                if data.ok:
-                    self.refreshToken = data.json()['refresh_token']
-                    self.authToken = data.json()['access_token']
-                    self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
-                    return True
-                else:
-                    error = json.loads(data.text)
-                    print(error['error'] + ': ' + error['error_description'])
-                    return False
+            if data.ok:
+                self.refreshToken = data.json()['refresh_token']
+                self.authToken = data.json()['access_token']
+                self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
+                return True
+            else:
+                error = json.loads(data.text)
+                print(error['error'] + ': ' + error['error_description'])
+                return False
 
 
 
@@ -141,6 +144,7 @@ class Spotify:
             "offset": "0",
             "limit": "50"
         }
+
         nextStr = self.apiUrl + "me/tracks"
         track_list = list()
         while True:
@@ -154,6 +158,38 @@ class Spotify:
                 else:
                     return track_list
             else:
+                return
+
+    def get_playlist_tracks(self, playlist_id, artists=False):
+        payload = {
+            "fields": "limit,next,items(track(name,uri,artists(uri)))",
+            "offset": 0,
+            "limit:": 100
+        }
+        nextStr = self.apiUrl + "playlists/" + playlist_id + "/tracks"
+        track_list = list()
+        artists_count = dict()
+        while True:
+            data = self.session.get(nextStr, params=payload,  headers=self.headers)
+            if data.ok:
+                json = data.json()
+                for i in json['items']:
+
+                    if i['track']['artists'][0]['uri'] not in artists_count.keys():
+                        artists_count[i['track']['artists'][0]['uri']] = 1
+                    else:
+                        artists_count[i['track']['artists'][0]['uri']] += 1
+
+                    track_list.append(i['track']["uri"])
+                if json['next'] is not None:
+                    nextStr = json['next']
+                else:
+                    if artists:
+                        return track_list, artists_count
+                    else:
+                        return track_list
+            else:
+                print("ERROR")
                 return
 
 
@@ -181,4 +217,4 @@ class Spotify:
         response = self.session.post(self.apiUrl + "users/" + id + '/playlists', json=body, headers=self.headers)
         playlistId = response.json()['id']
         response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": tracks, 'position': '0'}, headers=self.headers)
-        print(response1)
+        return response1
