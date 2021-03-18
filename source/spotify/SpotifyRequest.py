@@ -168,24 +168,20 @@ class Spotify:
         }
         nextStr = self.apiUrl + "playlists/" + playlist_id + "/tracks"
         track_list = list()
-        artists_count = dict()
+        artist_list = list()
         while True:
             data = self.session.get(nextStr, params=payload,  headers=self.headers)
             if data.ok:
                 json = data.json()
                 for i in json['items']:
 
-                    if i['track']['artists'][0]['uri'] not in artists_count.keys():
-                        artists_count[i['track']['artists'][0]['uri']] = 1
-                    else:
-                        artists_count[i['track']['artists'][0]['uri']] += 1
-
                     track_list.append(i['track']["uri"])
+                    artist_list.append(i['track']['artists'][0]["uri"])
                 if json['next'] is not None:
                     nextStr = json['next']
                 else:
                     if artists:
-                        return track_list, artists_count
+                        return track_list, artist_list
                     else:
                         return track_list
             else:
