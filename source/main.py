@@ -1,9 +1,18 @@
-from Bot.BotHandler import *
+from source.Bot.BotHandler import *
 
 import asyncio
 from aiohttp import web
 import os
 import json
+
+class MyHandler:
+    def __init__(self):
+        self.onStatus = 2
+        self.onString = ""
+    def handle(self,bot, message):
+        print('yeah')
+    def hi(self):
+        pass
 
 PORT = int(os.environ.get('PORT', 5000))
 config = ""
@@ -18,6 +27,14 @@ else:
         config["webhook_port"] = "8443"
 
 bot = BotHandler(config)
+
+handler = HelloHandler()
+handler1 = HowHandler()
+handler2 = MyHandler()
+
+bot.add_handler(handler)
+bot.add_handler(handler1)
+bot.add_handler(handler2)
 
 async def check(request):
     print("MESSAGE GET!")
@@ -50,13 +67,12 @@ if __name__ == "__main__":
         status = bot.delete_webhook()
         if status:
             config["isWebHookOk"] = 0
-            conf_file = open("source/Bot/bot_config.json", "w")
+            conf_file = open("Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
             while True:
                 updates = bot.getUpdates()
                 if updates is not None:
-                    for i in updates:
-                        bot.sendMessage(i["message"]["from"]["id"], "test")
+                    bot.procceed_updates(updates)
         else:
             print(status)
