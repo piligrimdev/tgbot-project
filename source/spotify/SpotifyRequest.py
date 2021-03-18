@@ -4,6 +4,7 @@ import asyncio
 import base64
 import webbrowser
 from urllib import parse
+import time
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -188,7 +189,7 @@ class Spotify:
                 print("ERROR")
                 return
 
-
+    #RENAME!!
     def similar_artist(self, parms):
 
         if "seed_artist" in parms.keys() or \
@@ -198,6 +199,34 @@ class Spotify:
         else:
             print("Seed artists, genres, or tracks required")
             return None
+
+    def related_artists(self, id):
+        time.sleep(0.1)
+        data = self.session.get(self.apiUrl + "artists/{}/related-artists".format(id), headers=self.headers)
+        artists_list = []
+
+        if data.ok:
+            dataJson = data.json()
+            for i in dataJson['artists']:
+                item = {}
+                item['artist'] = i['id']
+                item['genres'] = i['genres']
+                artists_list.append(item)
+            return  artists_list
+        else:
+            print(data)
+            return []
+
+    def get_artist_genre(self, id):
+        time.sleep(0.1)
+        data = self.session.get(self.apiUrl + "artists/{}".format(id), headers=self.headers)
+
+        if data.ok:
+            js = data.json()
+            return js['genres']
+        else:
+            print(data)
+            return []
 
     def create_playlist(self, id, name, tracks=[], public=True, decription=None):
         body = {
