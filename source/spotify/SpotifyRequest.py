@@ -169,20 +169,19 @@ class Spotify:
         }
         nextStr = self.apiUrl + "playlists/" + playlist_id + "/tracks"
         track_list = list()
-        artist_list = list()
+        artists_list = list()
         while True:
             data = self.session.get(nextStr, params=payload,  headers=self.headers)
             if data.ok:
                 json = data.json()
                 for i in json['items']:
-
-                    track_list.append(i['track']["uri"])
-                    artist_list.append(i['track']['artists'][0]["uri"])
+                    track_list.append({'track': i['track']["uri"], 'artist': i['track']['artists'][0]["uri"]})
+                    artists_list.append(i['track']['artists'][0]["uri"])
                 if json['next'] is not None:
                     nextStr = json['next']
                 else:
                     if artists:
-                        return track_list, artist_list
+                        return track_list, artists_list
                     else:
                         return track_list
             else:
@@ -191,7 +190,7 @@ class Spotify:
 
     #RENAME!!
     def similar_artist(self, parms):
-
+        time.sleep(0.3)
         if "seed_artist" in parms.keys() or \
             "seed_genres" in parms.keys() or \
                 "seed_tracks" in parms.keys():
@@ -227,6 +226,16 @@ class Spotify:
         else:
             print(data)
             return []
+    def get_artist_name(self, id):
+        time.sleep(0.1)
+        data = self.session.get(self.apiUrl + "artists/{}".format(id), headers=self.headers)
+
+        if data.ok:
+            js = data.json()
+            return js['name']
+        else:
+            print(data)
+            return ""
 
     def create_playlist(self, id, name, tracks=[], public=True, decription=None):
         body = {
