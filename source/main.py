@@ -150,7 +150,7 @@ if __name__ == "__main__":
                     "market": "US"
                 }
 
-                rec_data = spotify.similar_artist(params)
+                rec_data = spotify.track_recommendation(params)
                 uris = listOfTracks(rec_data.json())
                 full_uris.extend(list(set(uris).difference(set(full_uris))))
 
@@ -178,7 +178,7 @@ if __name__ == "__main__":
                 name = spotify.get_artist_name(id)
                 names += name + " "
             print("\nTracks based on " + names + "\n")
-            rec_data = spotify.similar_artist(params)
+            rec_data = spotify.track_recommendation(params)
             uris = listOfTracks(rec_data.json())
             full_uris.extend(list(set(uris).difference(set(full_uris))))
 

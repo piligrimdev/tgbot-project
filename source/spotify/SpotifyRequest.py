@@ -188,8 +188,7 @@ class Spotify:
                 print("ERROR")
                 return
 
-    #RENAME!!
-    def similar_artist(self, parms):
+    def track_recommendation(self, parms):
         time.sleep(0.3)
         if "seed_artist" in parms.keys() or \
             "seed_genres" in parms.keys() or \
@@ -207,7 +206,7 @@ class Spotify:
         if data.ok:
             dataJson = data.json()
             for i in dataJson['artists']:
-                item = {}
+                item = dict()
                 item['artist'] = i['id']
                 item['genres'] = i['genres']
                 artists_list.append(item)
@@ -226,6 +225,7 @@ class Spotify:
         else:
             print(data)
             return []
+
     def get_artist_name(self, id):
         time.sleep(0.1)
         data = self.session.get(self.apiUrl + "artists/{}".format(id), headers=self.headers)
@@ -244,11 +244,33 @@ class Spotify:
         }
         if decription is not None:
             body["description"] = decription
-        uris = str()
-        for i in tracks:
-            uris += i + ","
-        uris = uris[:-1]
+
+
         response = self.session.post(self.apiUrl + "users/" + id + '/playlists', json=body, headers=self.headers)
         playlistId = response.json()['id']
-        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": tracks, 'position': '0'}, headers=self.headers)
-        return response1
+
+        uris = str()
+        counter = 0
+        for i in tracks:
+            if counter != 100:
+                uris += i + ","
+                counter += 1
+            else:
+                uris = uris[:-1]
+                response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": tracks, 'position': '0'}, headers=self.headers)
+                if not response1.ok:
+                    error = json.loads(response1.text)
+                    print(error['error'] + ': ' + error['error_description'])
+                    return
+                uris = str
+                counter = 0
+
+        uris = uris[:-1]
+        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',
+                                      json={"uris": tracks, 'position': '0'}, headers=self.headers)
+        if not response1.ok:
+            error = json.loads(response1.text)
+            print(error['error'] + ': ' + error['error_description'])
+            return response1
+        else:
+            return response
