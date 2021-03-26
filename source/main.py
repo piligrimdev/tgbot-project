@@ -36,8 +36,7 @@ if __name__ == "__main__":
         status = bot.check_webhook()
         if status == True:
 
-            handler = HelloHandler("0.0.0.0", 8080, config['webhook_url'] + ":8080/")
-            print(config['webhook_url'] + ":8080/")
+            handler = HelloHandler("0.0.0.0/callback/", PORT, "https://tgbotproject.herokuapp.com/callback/")
             bot.add_handler(handler)
             print("WEBHOOK OK")
             config["isWebHookOk"] = 1
