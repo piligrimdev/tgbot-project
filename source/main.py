@@ -5,15 +5,6 @@ from aiohttp import web
 import os
 import json
 
-class MyHandler:
-    def __init__(self):
-        self.onStatus = 2
-        self.onString = ""
-    def handle(self,bot, message):
-        print('yeah')
-    def hi(self):
-        pass
-
 PORT = int(os.environ.get('PORT', 5000))
 config = ""
 
@@ -29,12 +20,10 @@ else:
 bot = BotHandler(config)
 
 handler = HelloHandler()
-handler1 = HowHandler()
-handler2 = MyHandler()
+handler1 = PlaylistHandler()
 
 bot.add_handler(handler)
 bot.add_handler(handler1)
-bot.add_handler(handler2)
 
 async def check(request):
     print("MESSAGE GET!")

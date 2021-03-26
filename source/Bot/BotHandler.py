@@ -2,6 +2,8 @@ import json
 import requests
 import asyncio
 import aiohttp
+import sys
+from source.spotify.SpotifyRequest import *
 
 class HandlerMeta(type):
     def __instancecheck__(cls, instance):
@@ -21,12 +23,30 @@ class BaseHandler(metaclass=HandlerMeta):
         pass
     def canHandle(self, bot, message) -> bool:
         pass
+
 class HelloHandler:
     def __init__(self):
         self.onStatus = 0
         self.onString = ""
     def handle(self, bot, message):
-        bot.sendMessage(message['from']['id'], "Hello There, {}!".format(message['from']['username']))
+        bot.sendMessage(message['from']['id'], "Привет, {}!".format(message['from']['username']))
+        bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста")
+        bot.sendMessage(message['from']['id'], "Для начала, мне нужно авторизовать тебя в Spotify")
+
+        with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
+            conf = json.load(file)
+        spotify = Spotify(0.2)
+        link = spotify.getAuthLink(conf, 'localhost', 8080, 'http://localhost:8080/', 'playlist-modify-public')
+        bot.sendMessage(message['from']['id'], link)
+
+        spotify.userAuth(conf, 'localhost', 8080, 'http://localhost:8080/')
+
+        bot.user_spotify[message['from']['id']] = spotify
+
+        bot.sendMessage(message['from']['id'], "Отлично! Я запомнил тебя до тех пор, пока не выключусь, ха-ха")
+        bot.sendMessage(message['from']['id'], "Теперь, пришли, пожалуйста, ссылку на плейлист Spotify, которых ты хочешь взять в основу нового")
+        bot.sendMessage(message['from']['id'], "(В формате Spotify URI)")
+
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
             if self.onString in message['text'] and bot.dialog_status[message['from']['id']] == self.onStatus:
@@ -37,12 +57,17 @@ class HelloHandler:
             bot.dialog_status[message['from']['id']] = 1
             return True
 
-class HowHandler:
+class PlaylistHandler:
     def __init__(self):
         self.onStatus = 1
         self.onString = ""
     def handle(self, bot, message):
-        bot.sendMessage(message['from']['id'], "How are you, {}?".format(message['from']['username']))
+        uri = message['text']
+        bot.sendMessage(message['from']['id'], "Отлично! Совсем скоро будет готов плейлист!")
+        uri = uri.split(":")[2]
+        spotify = bot.user_spotify[message['from']['id']]
+        create_based_playlist(spotify, uri, "MEGA TEST 10")
+        bot.sendMessage(message['from']['id'], "Проверь свой профиль Spotify, ведь там тебя ждет плейлист MEGA TEST 10!")
         bot.dialog_status[message['from']['id']] += 1
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
@@ -56,6 +81,7 @@ class BotHandler:
 
         self.handlers = []
         self.dialog_status = {}
+        self.user_spotify = {}
         self.config = conf
         self.url = "https://api.telegram.org/bot" + self.config["token"] + "/"
         self.lastUpdateId = self.config["lastUpdateId"]
@@ -86,6 +112,7 @@ class BotHandler:
                         json.dump(self.config, conf_file)
 
                     return new_responses
+
     def add_handler(self, handler):
             if issubclass(handler, BaseHandler):
                 self.handlers.append(handler)

@@ -89,21 +89,19 @@ class Spotify:
             print(data.text['error'] + ': ' + data.text['error_description'])
             return False
 
-    def userAuth(self, conf, host, port, redirect, scope):
+    def getAuthLink(self, conf, host, port, redirect, scope):
         payload = {
-                'client_id': conf['CLIENT_ID'],
-                'response_type': 'code',
-                'redirect_uri': redirect,
-                'scope': scope
-            }
+            'client_id': conf['CLIENT_ID'],
+            'response_type': 'code',
+            'redirect_uri': redirect,
+            'scope': scope
+        }
 
-        data = self.session.get("https://accounts.spotify.com/authorize", params=payload)
+        return self.session.get("https://accounts.spotify.com/authorize", params=payload).url
 
-        if data.ok:
+    def userAuth(self, conf, host, port, redirect):
             server = HTTPServer((host, port), RequestHandler)
             server.code = None
-
-            webbrowser.open(data.url)
 
             server.handle_request()
 
