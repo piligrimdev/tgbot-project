@@ -1,16 +1,14 @@
 from Bot.BotHandler import *
 from spotify.SpotifyRequest import *
 import json
-import time
 
 def Jaccard(setA, setB) -> float:
     if len(setA) != 0 and len(setB) != 0:
-
         return len(setA.intersection(setB)) / len(setA.union(setB))
     else:
         return 0
 
-def listOfSimilars(artists):
+def similar_artists(artists) -> list:
     uniqeArtists = list(set(artists))
     listSim = []
     for i in range(len(uniqeArtists)):
@@ -58,22 +56,10 @@ def listOfSimilars(artists):
                 print(j)
     return listSim
 
-
-if __name__ == "__main__":
-    with open("spotify/spotify_config.json", "r") as file:
-        conf = json.load(file)
-    spotify = Spotify()
-
-    if spotify.userAuth(conf, 'localhost', 8080, 'http://localhost:8080/', 'playlist-modify-public'):
-        data, artists = spotify.get_playlist_tracks("3bSjIwakzyBHIljtQhmHs7", True)
-
-    similar_artists = listOfSimilars(artists)
-
+def average_audio_features(data) -> dict:
     tracks_features = list()
-
     for i in data:
         i = i['track'].split(':')[2]
-        time.sleep(0.5)
         try:
             json = spotify.audio_features(i).json()
             if 'error' not in json.keys():
@@ -85,7 +71,7 @@ if __name__ == "__main__":
                 features_json["valence"] = json["valence"]
                 features_json["uri"] = json["uri"]
                 tracks_features.append(features_json)
-                print(i + ' checked')
+                #print(i + ' checked')
             else:
                 print(json['error'])
                 break
@@ -113,11 +99,18 @@ if __name__ == "__main__":
         "speech": 0,
         "valence": 0
     }
-    for key in sum_features.keys():
-        aver_features[key] = sum_features[key] / count
 
+    for key in sum_features.keys():
+        try:
+            aver_features[key] = sum_features[key] / count
+        except Exception as e:
+            print(e)
+            return dict()
+    return aver_features
+
+def playlist_recommnedation_tracks(data, sim_artists, aver_features, limit, market) -> list:
     full_uris = list()
-    for artists in similar_artists:
+    for artists in sim_artists:
         seed_tracks = str()
         seed_artists = str()
         tracks = []
@@ -146,17 +139,18 @@ if __name__ == "__main__":
                     "target_loudness": aver_features['loud'],
                     "target_speechiness": aver_features['speech'],
                     "target_valence": aver_features['valence'],
-                    "limit": "5",
-                    "market": "US"
+                    "limit": limit,
+                    "market": market
                 }
 
                 rec_data = spotify.track_recommendation(params)
-                uris = listOfTracks(rec_data.json())
+                uris = listOfTracks(rec_data)
                 full_uris.extend(list(set(uris).difference(set(full_uris))))
 
                 counter = 0
                 seed_tracks = str()
                 seed_artists = str()
+
         if len(seed_tracks) != 0:
             seed_tracks = seed_tracks[:-1]
             seed_artists = seed_artists[:-1]
@@ -172,18 +166,42 @@ if __name__ == "__main__":
                 "limit": "5",
                 "market": "US"
             }
-            names = ""
-            for i in artists:
-                id = i.split(':')[2]
-                name = spotify.get_artist_name(id)
-                names += name + " "
-            print("\nTracks based on " + names + "\n")
+
             rec_data = spotify.track_recommendation(params)
-            uris = listOfTracks(rec_data.json())
+            uris = listOfTracks(rec_data)
             full_uris.extend(list(set(uris).difference(set(full_uris))))
 
+    return full_uris
 
-    play_data = spotify.create_playlist("fgt0pmkaco3f1a5259n0ayqsa", "Super duper test 8", full_uris)
+def create_based_playlist(spotify, playlist_id, name, public=True, desc="", baseOnMarket=False, limit=5):
+
+    userData = spotify.get_user_info()
+    userId = userData['id']
+
+    market = "US"
+    if baseOnMarket:
+        market = userData['country']
+
+    data = spotify.get_playlist_tracks(playlist_id)
 
 
-    print(play_data)
+    artists = list()
+
+    for i in data:
+        artists.append(i['artist'])
+
+    similars = similar_artists(artists)
+
+    aver_features = average_audio_features(data)
+
+    full_uris = playlist_recommnedation_tracks(data, similars, aver_features, limit, market)
+
+    spotify.create_playlist(userId, name, full_uris, public, desc)
+
+
+if __name__ == "__main__":
+    with open("spotify/spotify_config.json", "r") as file:
+        conf = json.load(file)
+    spotify = Spotify(0.2)
+    if spotify.userAuth(conf, 'localhost', 8080, 'http://localhost:8080/', 'playlist-modify-public'):
+        create_based_playlist(spotify, "3bSjIwakzyBHIljtQhmHs7", "Test 9")

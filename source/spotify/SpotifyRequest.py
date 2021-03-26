@@ -1,11 +1,10 @@
 import json
 import requests
 import asyncio
+import time
 import base64
 import webbrowser
 from urllib import parse
-import time
-
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -48,7 +47,8 @@ def parseUrlParams(url):
     return dict(parse.parse_qsl(parse.urlsplit(url).query))
 
 class Spotify:
-    def __init__(self):
+    def __init__(self, time):
+        self.time = time
         self.session = requests.Session()
         self.apiUrl = 'https://api.spotify.com/v1/'
         self.headers = {
@@ -137,7 +137,17 @@ class Spotify:
 
 
     def audio_features(self, id):
+        time.sleep(self.time)
         return self.session.get(self.apiUrl + "audio-features/{0}".format(id), headers=self.headers)
+
+    def get_user_info(self):
+        data = self.session.get(self.apiUrl + "me", headers=self.headers)
+        js = data.json()
+        if data.ok:
+            return js
+        else:
+            print(js['error'])
+            return dict()
 
     def get_all_users_saved_tracks(self):
 
@@ -161,7 +171,7 @@ class Spotify:
             else:
                 return
 
-    def get_playlist_tracks(self, playlist_id, artists=False):
+    def get_playlist_tracks(self, playlist_id):
         payload = {
             "fields": "limit,next,items(track(name,uri,artists(uri)))",
             "offset": 0,
@@ -169,37 +179,38 @@ class Spotify:
         }
         nextStr = self.apiUrl + "playlists/" + playlist_id + "/tracks"
         track_list = list()
-        artists_list = list()
         while True:
             data = self.session.get(nextStr, params=payload,  headers=self.headers)
             if data.ok:
                 json = data.json()
                 for i in json['items']:
                     track_list.append({'track': i['track']["uri"], 'artist': i['track']['artists'][0]["uri"]})
-                    artists_list.append(i['track']['artists'][0]["uri"])
+                    #artists_list.append(i['track']['artists'][0]["uri"])
                 if json['next'] is not None:
                     nextStr = json['next']
                 else:
-                    if artists:
-                        return track_list, artists_list
-                    else:
-                        return track_list
+                    return track_list
             else:
                 print("ERROR")
                 return
 
     def track_recommendation(self, parms):
-        time.sleep(0.3)
         if "seed_artist" in parms.keys() or \
             "seed_genres" in parms.keys() or \
                 "seed_tracks" in parms.keys():
-                    return self.session.get(self.apiUrl + "recommendations", params=parms, headers=self.headers)
+                    data = self.session.get(self.apiUrl + "recommendations", params=parms, headers=self.headers)
+                    js = data.json()
+                    if data.ok:
+                        return js
+                    else:
+                        print(js['error'])
+                        return dict()
         else:
             print("Seed artists, genres, or tracks required")
             return None
 
     def related_artists(self, id):
-        time.sleep(0.1)
+        time.sleep(self.time)
         data = self.session.get(self.apiUrl + "artists/{}/related-artists".format(id), headers=self.headers)
         artists_list = []
 
@@ -210,13 +221,13 @@ class Spotify:
                 item['artist'] = i['id']
                 item['genres'] = i['genres']
                 artists_list.append(item)
-            return  artists_list
+            return artists_list
         else:
             print(data)
             return []
 
     def get_artist_genre(self, id):
-        time.sleep(0.1)
+        time.sleep(self.time)
         data = self.session.get(self.apiUrl + "artists/{}".format(id), headers=self.headers)
 
         if data.ok:
@@ -227,14 +238,14 @@ class Spotify:
             return []
 
     def get_artist_name(self, id):
-        time.sleep(0.1)
+        time.sleep(self.time)
         data = self.session.get(self.apiUrl + "artists/{}".format(id), headers=self.headers)
 
+        js = data.json()
         if data.ok:
-            js = data.json()
             return js['name']
         else:
-            print(data)
+            print(js['error'])
             return ""
 
     def create_playlist(self, id, name, tracks=[], public=True, decription=None):
@@ -249,28 +260,27 @@ class Spotify:
         response = self.session.post(self.apiUrl + "users/" + id + '/playlists', json=body, headers=self.headers)
         playlistId = response.json()['id']
 
-        uris = str()
+        uris = list()
         counter = 0
         for i in tracks:
             if counter != 100:
-                uris += i + ","
+                uris.append(i)
                 counter += 1
             else:
-                uris = uris[:-1]
-                response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": tracks, 'position': '0'}, headers=self.headers)
+                response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": uris, 'position': '0'}, headers=self.headers)
+
                 if not response1.ok:
                     error = json.loads(response1.text)
                     print(error['error'] + ': ' + error['error_description'])
                     return
-                uris = str
+
+                uris = list()
                 counter = 0
 
-        uris = uris[:-1]
-        response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',
-                                      json={"uris": tracks, 'position': '0'}, headers=self.headers)
-        if not response1.ok:
-            error = json.loads(response1.text)
-            print(error['error'] + ': ' + error['error_description'])
-            return response1
-        else:
-            return response
+        if len(uris) != 0:
+            response1 = self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',
+                                          json={"uris": uris, 'position': '0'}, headers=self.headers)
+
+            if not response1.ok:
+                error = json.loads(response1.text)
+                print(error['error'] + ': ' + error['error_description'])
