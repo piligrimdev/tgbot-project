@@ -25,9 +25,13 @@ class BaseHandler(metaclass=HandlerMeta):
         pass
 
 class HelloHandler:
-    def __init__(self):
+    def __init__(self, host, port, uri):
         self.onStatus = 0
         self.onString = ""
+        self.uri = uri
+        self.host = host
+        self.port = port
+
     def handle(self, bot, message):
         bot.sendMessage(message['from']['id'], "Привет, {}!".format(message['from']['username']))
         bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста")
@@ -36,10 +40,10 @@ class HelloHandler:
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
         spotify = Spotify(0.2)
-        link = spotify.getAuthLink(conf, 'localhost', 8080, 'http://localhost:8080/', 'playlist-modify-public')
+        link = spotify.getAuthLink(conf, self.host, self.port, self.uri, 'playlist-modify-public')
         bot.sendMessage(message['from']['id'], link)
 
-        spotify.userAuth(conf, 'localhost', 8080, 'http://localhost:8080/')
+        spotify.userAuth(conf, self.host, self.port, self.uri)
 
         bot.user_spotify[message['from']['id']] = spotify
 

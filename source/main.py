@@ -13,16 +13,14 @@ if os.environ.get("HEROKU") is not None:
         config = json.load(conf_file)
         config["webhook_port"] = str(PORT)
 else:
-    with open("source/Bot/bot_config.json", "r") as conf_file:
+    with open("Bot/bot_config.json", "r") as conf_file:
         config = json.load(conf_file)
         config["webhook_port"] = "8443"
 
 bot = BotHandler(config)
 
-handler = HelloHandler()
 handler1 = PlaylistHandler()
 
-bot.add_handler(handler)
 bot.add_handler(handler1)
 
 
@@ -37,6 +35,9 @@ if __name__ == "__main__":
     if os.environ.get("HEROKU") is not None:
         status = bot.check_webhook()
         if status == True:
+
+            handler = HelloHandler(config['webhook_url'], 0, config['webhook_url'] )
+            bot.add_handler(handler)
             print("WEBHOOK OK")
             config["isWebHookOk"] = 1
             conf_file = open("source/Bot/bot_config.json", "w")
