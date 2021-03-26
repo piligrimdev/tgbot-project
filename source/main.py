@@ -9,7 +9,7 @@ PORT = int(os.environ.get('PORT', 5000))
 config = ""
 
 if os.environ.get("HEROKU") is not None:
-    with open("source/Bot/bot_config.json", "r") as conf_file:
+    with open(sys.path[0] + "/Bot/bot_config.json", "r") as conf_file:
         config = json.load(conf_file)
         config["webhook_port"] = str(PORT)
 else:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         if status == True:
             print("WEBHOOK OK")
             config["isWebHookOk"] = 1
-            conf_file = open("source/Bot/bot_config.json", "w")
+            conf_file = open(sys.path[0] +"/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         else:
             print("WEBHOOK NOT OK: " + status)
             config["isWebHookOk"] = 0
-            conf_file = open("source/Bot/bot_config.json", "w")
+            conf_file = open(sys.path[0] + "/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
     else:
