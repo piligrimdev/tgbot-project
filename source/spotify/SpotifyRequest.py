@@ -101,7 +101,7 @@ class Spotify:
 
     def userAuth(self, conf, host, port, redirect):
             server = HTTPServer((host, port), RequestHandler)
-            print("AUTH REDIR AT " + server.server_address)
+            print("AUTH REDIR AT " + str(server.server_address))
             server.code = None
 
             server.handle_request()
