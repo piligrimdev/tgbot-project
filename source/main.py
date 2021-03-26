@@ -25,9 +25,10 @@ handler1 = PlaylistHandler()
 bot.add_handler(handler)
 bot.add_handler(handler1)
 
+
 async def check(request):
     print("MESSAGE GET!")
-    js = request.json()
+    js = await request.json()
     bot.procceed_updates([js])
     return web.Response()
 
