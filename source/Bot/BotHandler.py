@@ -131,16 +131,21 @@ class BotHandler:
         return self.session.post(self.url + "sendMessage", {"chat_id": id, "text": text})
 
     def check_webhook(self):
+        print("Checking webhook in file")
         if self.config["isWebHookOk"] == 1:
+            print("     File says its ok")
             status = self.session.get(self.url + "getWebhookInfo")
             status = status.json()
+            print(status)
             if status["ok"] == True:
                 return True
             else:
                 return False
         else:
+            print("     Its not ok in file")
             status = self.session.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + "/" + self.config["token"] + "/")
             status = status.json()
+            print(status)
             if status["ok"] == True:
                 return True
             else:
