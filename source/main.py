@@ -1,13 +1,24 @@
 from source.Bot.BotHandler import *
 
 import asyncio
-from source.spotify.SpotifyRequest import parseUrlParams
 from aiohttp import web
 import os
 import json
 
 PORT = int(os.environ.get('PORT', 5000))
 config = ""
+
+def query_val(url : str) -> dict:
+    values = dict()
+    if len(url) != 0:
+        if url.find('?') != -1:
+            query = url.split('?')[1]
+            values_pairs = query.split('&')
+            for i in values_pairs:
+                splited = i.split('=')
+                values[splited[0]] = splited[1]
+    return values
+
 
 if os.environ.get("HEROKU") is not None:
     with open("source/Bot/bot_config.json", "r") as conf_file:
@@ -33,7 +44,7 @@ async def check_auth(request):
     print("AUTH GET!")
     print(request.rel_url)
     url = request.rel_url
-    auth_data = parseUrlParams(url)
+    auth_data = query_val()
     auth_data['type'] = 'auth'
     bot.procceed_updates([auth_data])
     return web.Response()
