@@ -151,8 +151,8 @@ class BotHandler:
                         break
             elif 'type' in i.keys():
                 for j in self.handlers:
-                    if j.canHandle(self, i['message']):
-                        j.handle(self, i['message'])
+                    if j.canHandle(self, i):
+                        j.handle(self, i)
                         break
 
     def sendMessage(self, id, text):
