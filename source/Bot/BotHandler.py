@@ -41,7 +41,7 @@ class HelloHandler:
                                    'playlist-modify-public', message['from']['id'])
         bot.sendMessage(message['from']['id'], link)
 
-        bot.user_spotify[str(message['from']['id'])] = spotify
+        bot.user_spotify[message['from']['id']] = spotify
 
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
@@ -62,14 +62,14 @@ class AuthHandler:
 
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
-        spotify = bot.user_spotify[message['state']]
+        spotify = bot.user_spotify[int(message['state'])]
 
         spotify.userAuth(conf, "https://tgbotproject.herokuapp.com/callback/", message['code'])
 
         bot.sendMessage(message['state'], "Отлично, я тебя запомнил!")
         bot.sendMessage(message['state'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
 
-        bot.dialog_status[message['state']] += 1
+        bot.dialog_status[int(message['state'])] += 1
 
     def canHandle(self, bot, message):
         return True
