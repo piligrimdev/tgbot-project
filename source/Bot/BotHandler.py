@@ -25,12 +25,9 @@ class BaseHandler(metaclass=HandlerMeta):
         pass
 
 class HelloHandler:
-    def __init__(self, host, port, uri):
+    def __init__(self):
         self.onStatus = 0
         self.onString = ""
-        self.uri = uri
-        self.host = host
-        self.port = port
 
     def handle(self, bot, message):
         bot.sendMessage(message['from']['id'], "Привет, {}!".format(message['from']['username']))
@@ -40,7 +37,7 @@ class HelloHandler:
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
         spotify = Spotify(0.2)
-        link = spotify.getAuthLink(conf, self.uri, "https://tgbotproject.herokuapp.com/callback/"
+        link = spotify.getAuthLink(conf, "https://tgbotproject.herokuapp.com/callback/",
                                    'playlist-modify-public', message['from']['id'])
         bot.sendMessage(message['from']['id'], link)
 
@@ -57,12 +54,9 @@ class HelloHandler:
             return True
 
 class AuthHandler:
-    def __init__(self, host, port, uri):
+    def __init__(self):
         self.onStatus = 0
         self.onString = ""
-        self.uri = uri
-        self.host = host
-        self.port = port
 
     def handle(self, bot, message):
 
