@@ -1,6 +1,7 @@
 from source.Bot.BotHandler import *
 
 import asyncio
+from source.spotify.SpotifyRequest import parseUrlParams
 from aiohttp import web
 import os
 import json
@@ -19,10 +20,22 @@ else:
 
 bot = BotHandler(config)
 
-handler1 = PlaylistHandler()
+handler = HelloHandler()
+handler1 = AuthHandler()
+handler2 = PlaylistHandler()
 
+bot.add_handler(handler)
 bot.add_handler(handler1)
+bot.add_handler(handler2)
 
+
+async def check_auth(request):
+    print("AUTH GET!")
+    url = request.url
+    auth_data = parseUrlParams(url)
+    auth_data['type'] = 'auth'
+    bot.procceed_updates([auth_data])
+    return web.Response()
 
 async def check(request):
     print("MESSAGE GET!")
@@ -47,6 +60,7 @@ if __name__ == "__main__":
 
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
+            app.router.add_get("/callback/", check_auth)
             web.run_app(app, host="0.0.0.0", port=PORT)
 
         else:

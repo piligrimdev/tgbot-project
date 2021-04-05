@@ -40,16 +40,11 @@ class HelloHandler:
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
         spotify = Spotify(0.2)
-        link = spotify.getAuthLink(conf, self.host, self.port, self.uri, 'playlist-modify-public')
+        link = spotify.getAuthLink(conf, self.uri, "https://tgbotproject.herokuapp.com/callback/"
+                                   'playlist-modify-public', message['from']['id'])
         bot.sendMessage(message['from']['id'], link)
 
-        spotify.userAuth(conf, self.host, self.port, self.uri)
-
         bot.user_spotify[message['from']['id']] = spotify
-
-        bot.sendMessage(message['from']['id'], "Отлично! Я запомнил тебя до тех пор, пока не выключусь, ха-ха")
-        bot.sendMessage(message['from']['id'], "Теперь, пришли, пожалуйста, ссылку на плейлист Spotify, которых ты хочешь взять в основу нового")
-        bot.sendMessage(message['from']['id'], "(В формате Spotify URI)")
 
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
@@ -61,10 +56,39 @@ class HelloHandler:
             bot.dialog_status[message['from']['id']] = 1
             return True
 
+class AuthHandler:
+    def __init__(self, host, port, uri):
+        self.onStatus = 0
+        self.onString = ""
+        self.uri = uri
+        self.host = host
+        self.port = port
+
+    def handle(self, bot, message):
+
+        with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
+            conf = json.load(file)
+        spotify = bot.user_spotify[message['state']]
+
+        spotify.userAuth(conf, "https://tgbotproject.herokuapp.com/callback/", message['code'])
+
+        bot.sendMessage(message['from']['id'], "Отлично, я тебя запомнил!")
+        bot.sendMessage(message['from']['id'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
+
+        bot.dialog_status[message['from']['id']] += 1
+
+    def canHandle(self, bot, message):
+        if 'type' in message.keys() and 'state' in message.keys():
+            if message['state'] in bot.user_spotify.keys():
+                return True
+        return False
+
+
 class PlaylistHandler:
     def __init__(self):
-        self.onStatus = 1
+        self.onStatus = 2
         self.onString = ""
+
     def handle(self, bot, message):
         uri = message['text']
         bot.sendMessage(message['from']['id'], "Отлично! Совсем скоро будет готов плейлист!")
@@ -73,6 +97,7 @@ class PlaylistHandler:
         create_based_playlist(spotify, uri, "MEGA TEST 10")
         bot.sendMessage(message['from']['id'], "Проверь свой профиль Spotify, ведь там тебя ждет плейлист MEGA TEST 10!")
         bot.dialog_status[message['from']['id']] += 1
+
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
             if self.onString in message['text'] and bot.dialog_status[message['from']['id']] == self.onStatus:
@@ -126,6 +151,11 @@ class BotHandler:
     def procceed_updates(self, updates):
         for i in updates:
             if 'message' in i.keys():
+                for j in self.handlers:
+                    if j.canHandle(self, i['message']):
+                        j.handle(self, i['message'])
+                        break
+            elif 'type' in i.keys():
                 for j in self.handlers:
                     if j.canHandle(self, i['message']):
                         j.handle(self, i['message'])

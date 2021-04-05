@@ -89,22 +89,18 @@ class Spotify:
             print(data.text['error'] + ': ' + data.text['error_description'])
             return False
 
-    def getAuthLink(self, conf, host, port, redirect, scope):
+    def getAuthLink(self, conf, redirect, scope, state):
         payload = {
             'client_id': conf['CLIENT_ID'],
             'response_type': 'code',
             'redirect_uri': redirect,
-            'scope': scope
+            'scope': scope,
+            'state': state
         }
 
         return self.session.get("https://accounts.spotify.com/authorize", params=payload).url
 
-    def userAuth(self, conf, host, port, redirect):
-            server = HTTPServer((host, port), RequestHandler)
-            print("AUTH REDIR AT " + str(server.server_address))
-            server.code = None
-
-            server.handle_request()
+    def userAuth(self, conf, redirect, code):
 
             s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
             utf = s.encode("utf-8")
@@ -112,7 +108,7 @@ class Spotify:
 
             payload = {
                     "grant_type": "authorization_code",
-                    "code": server.code,
+                    "code": code,
                     "redirect_uri": redirect
                 }
 
