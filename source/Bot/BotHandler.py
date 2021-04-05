@@ -103,6 +103,7 @@ class BotHandler:
     def __init__(self, conf):
 
         self.handlers = []
+        self.auth_handlers = []
         self.dialog_status = {}
         self.user_spotify = {}
         self.config = conf
@@ -142,6 +143,12 @@ class BotHandler:
             else:
                 print("{} is not fully implements BaseHandler interface".format(type(handler)))
 
+    def add_auth_handler(self, handler):
+        if issubclass(handler, BaseHandler):
+            self.auth_handlers.append(handler)
+        else:
+            print("{} is not fully implements BaseHandler interface".format(type(handler)))
+
     def procceed_updates(self, updates):
         for i in updates:
             if 'message' in i.keys():
@@ -150,7 +157,7 @@ class BotHandler:
                         j.handle(self, i['message'])
                         break
             elif 'type' in i.keys():
-                for j in self.handlers:
+                for j in self.auth_handlers:
                     if j.canHandle(self, i):
                         j.handle(self, i)
                         break

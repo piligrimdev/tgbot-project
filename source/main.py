@@ -36,7 +36,7 @@ handler1 = AuthHandler()
 handler2 = PlaylistHandler()
 
 bot.add_handler(handler)
-bot.add_handler(handler1)
+bot.add_auth_handler(handler1)
 bot.add_handler(handler2)
 
 
