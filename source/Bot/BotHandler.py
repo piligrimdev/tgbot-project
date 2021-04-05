@@ -66,16 +66,19 @@ class AuthHandler:
 
         spotify.userAuth(conf, "https://tgbotproject.herokuapp.com/callback/", message['code'])
 
-        bot.sendMessage(message['from']['id'], "Отлично, я тебя запомнил!")
-        bot.sendMessage(message['from']['id'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
+        bot.sendMessage(message['state'], "Отлично, я тебя запомнил!")
+        bot.sendMessage(message['state'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
 
         bot.dialog_status[message['from']['id']] += 1
 
     def canHandle(self, bot, message):
+        return True
+        """
         if 'type' in message.keys() and 'state' in message.keys():
             if message['state'] in bot.user_spotify.keys():
                 return True
         return False
+        """
 
 
 class PlaylistHandler:
