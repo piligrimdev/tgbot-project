@@ -69,7 +69,7 @@ class AuthHandler:
         bot.sendMessage(message['state'], "Отлично, я тебя запомнил!")
         bot.sendMessage(message['state'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
 
-        bot.dialog_status[message['from']['id']] += 1
+        bot.dialog_status[message['state']] += 1
 
     def canHandle(self, bot, message):
         return True
