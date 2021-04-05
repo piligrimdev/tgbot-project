@@ -31,7 +31,8 @@ bot.add_handler(handler2)
 
 async def check_auth(request):
     print("AUTH GET!")
-    url = request.url
+    print(request.rel_url)
+    url = request.rel_url
     auth_data = parseUrlParams(url)
     auth_data['type'] = 'auth'
     bot.procceed_updates([auth_data])
