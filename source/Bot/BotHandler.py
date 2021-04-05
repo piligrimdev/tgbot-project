@@ -41,7 +41,7 @@ class HelloHandler:
                                    'playlist-modify-public', message['from']['id'])
         bot.sendMessage(message['from']['id'], link)
 
-        bot.user_spotify[message['from']['id']] = spotify
+        bot.user_spotify[str(message['from']['id'])] = spotify
 
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
