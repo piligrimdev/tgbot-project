@@ -46,13 +46,13 @@ async def check_auth(request):
     url = str(request.rel_url)
     auth_data = query_val(url)
     auth_data['type'] = 'auth'
-    bot.procceed_updates([auth_data])
+    await bot.procceed_updates([auth_data])
     return web.Response()
 
 async def check(request):
     print("MESSAGE GET!")
     js = await request.json()
-    bot.procceed_updates([js])
+    await bot.procceed_updates([js])
     return web.Response()
 
 if __name__ == "__main__":
