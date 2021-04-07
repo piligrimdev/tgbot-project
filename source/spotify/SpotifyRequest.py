@@ -3,7 +3,6 @@ import requests
 import asyncio
 import time
 import base64
-import webbrowser
 from urllib import parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 

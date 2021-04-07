@@ -30,12 +30,17 @@ class HelloHandler:
         self.onString = ""
 
     def handle(self, bot, message):
-        bot.sendMessage(message['from']['id'], "Привет, {}!".format(message['from']['username']))
+        if 'username' in message['from'].keys():
+            greetStr = "Привет, {}!".format(message['from']['username'])
+        else:
+            greetStr = "Привет!"
+        bot.sendMessage(message['from']['id'], greetStr)
         bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста")
         bot.sendMessage(message['from']['id'], "Для начала, мне нужно авторизовать тебя в Spotify")
 
-        with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
+        with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
+
         spotify = Spotify(0.2)
         link = spotify.getAuthLink(conf, "https://tgbotproject.herokuapp.com/callback/",
                                    'playlist-modify-public', message['from']['id'])
@@ -73,12 +78,6 @@ class AuthHandler:
 
     def canHandle(self, bot, message):
         return True
-        """
-        if 'type' in message.keys() and 'state' in message.keys():
-            if message['state'] in bot.user_spotify.keys():
-                return True
-        return False
-        """
 
 
 class PlaylistHandler:
