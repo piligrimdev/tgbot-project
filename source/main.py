@@ -31,12 +31,8 @@ else:
 
 bot = BotHandler(config)
 
-handler = HelloHandler()
-handler1 = AuthHandler()
 handler2 = PlaylistHandler()
 
-bot.add_handler(handler)
-bot.add_auth_handler(handler1)
 bot.add_handler(handler2)
 
 
@@ -55,18 +51,23 @@ async def check(request):
     await bot.procceed_updates([js])
     return web.Response()
 
-if __name__ == "__main__":
+
+async def main():
     status = ""
     if os.environ.get("HEROKU") is not None:
-        status = bot.check_webhook()
+        status = await bot.check_webhook()
         if status == True:
+
+            handler = HelloHandler("https://tgbotproject.herokuapp.com/callback/")
+            bot.add_handler(handler)
+            handler1 = AuthHandler("https://tgbotproject.herokuapp.com/callback/")
+            bot.add_auth_handler(handler1)
 
             print("WEBHOOK OK")
             config["isWebHookOk"] = 1
             conf_file = open("source/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
-
 
             app = web.Application()
             app.router.add_post("/" + config["token"] + "/", check)
@@ -81,15 +82,24 @@ if __name__ == "__main__":
             conf_file.close()
     else:
         print("LOCAL MACHINE")
-        status = bot.delete_webhook()
+        status = await bot.delete_webhook()
         if status:
             config["isWebHookOk"] = 0
             conf_file = open("Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
+
+            handler = HelloHandler("https://localhost/callback/")
+            handler1 = AuthHandler("https://localhost/callback/")
+            bot.add_auth_handler(handler1)
+            bot.add_handler(handler)
             while True:
-                updates = bot.getUpdates()
+                updates = await bot.getUpdates()
                 if updates is not None:
-                    bot.procceed_updates(updates)
+                    await bot.procceed_updates(updates)
         else:
             print(status)
+if __name__ == "__main__":
+    ioloop = asyncio.get_event_loop()
+    ioloop.run_until_complete(main())
+    ioloop.close()

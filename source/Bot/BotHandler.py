@@ -25,11 +25,12 @@ class BaseHandler(metaclass=HandlerMeta):
         pass
 
 class HelloHandler:
-    def __init__(self):
+    def __init__(self, url):
         self.onStatus = 0
         self.onString = ""
-
+        self.url = url
     async def handle(self, bot, message):
+        print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
         if 'username' in message['from'].keys():
             greetStr = "Привет, {}!".format(message['from']['username'])
         else:
@@ -41,10 +42,10 @@ class HelloHandler:
         with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
 
-        spotify = Spotify(0.2)
-        link = await spotify.getAuthLink(conf, "https://tgbotproject.herokuapp.com/callback/",
+        spotify = Spotify()
+        link = await spotify.getAuthLink(conf, self.url,
                                    'playlist-modify-public', message['from']['id'])
-        await bot.sendMessage(message['from']['id'], link)
+        await bot.sendMessage(message['from']['id'], str(link))
 
         bot.user_spotify[message['from']['id']] = spotify
 
@@ -59,17 +60,17 @@ class HelloHandler:
             return True
 
 class AuthHandler:
-    def __init__(self):
+    def __init__(self, url):
         self.onStatus = 0
         self.onString = ""
-
+        self.url = url
     async def handle(self, bot, message):
-
+        print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
         spotify = bot.user_spotify[int(message['state'])]
 
-        await spotify.userAuth(conf, "https://tgbotproject.herokuapp.com/callback/", message['code'])
+        await spotify.userAuth(conf, self.url, message['code'])
 
         await bot.sendMessage(message['state'], "Отлично, я тебя запомнил!")
         await bot.sendMessage(message['state'], "Теперь, пришли мне, пожалуйста, Spotify URI на плейлист, который ты хочешь положить в основу нового")
@@ -86,13 +87,14 @@ class PlaylistHandler:
         self.onString = ""
 
     async def handle(self, bot, message):
+        print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
         uri = message['text']
         await bot.sendMessage(message['from']['id'], "Отлично! Совсем скоро будет готов плейлист!")
         uri = uri.split(":")[2]
         spotify = bot.user_spotify[message['from']['id']]
         await create_based_playlist(spotify, uri, "MEGA TEST 10")
         await bot.sendMessage(message['from']['id'], "Проверь свой профиль Spotify, ведь там тебя ждет плейлист MEGA TEST 10!")
-        await bot.dialog_status[message['from']['id']] += 1
+        bot.dialog_status[message['from']['id']] += 1
 
     def canHandle(self, bot, message):
         if message['from']['id'] in bot.dialog_status.keys():
@@ -114,7 +116,7 @@ class BotHandler:
         self.debug = self.config["lastUpdateId"]
         self.session = aiohttp.ClientSession()
 
-    def getUpdates(self):
+    async def getUpdates(self):
         update = await self.session.get(self.url + "getUpdates")
         update = await update.json()
         if update["ok"] == True:
@@ -156,6 +158,7 @@ class BotHandler:
             if 'message' in i.keys():
                 for j in self.handlers:
                     if j.canHandle(self, i['message']):
+                        print('update from ' + str(i['message']['from']['id']))
                         await j.handle(self, i['message'])
                         break
             elif 'type' in i.keys():
@@ -164,10 +167,10 @@ class BotHandler:
                         await j.handle(self, i)
                         break
 
-    def sendMessage(self, id, text):
+    async def sendMessage(self, id, text):
         return await self.session.post(self.url + "sendMessage", params={"chat_id": id, "text": text})
 
-    def check_webhook(self):
+    async def check_webhook(self):
         print("Checking webhook in file")
         if self.config["isWebHookOk"] == 1:
             print("     File says its ok")
@@ -188,7 +191,7 @@ class BotHandler:
             else:
                 return status["error_code"]
 
-    def delete_webhook(self):
+    async def delete_webhook(self):
         status = await self.session.get(self.url + "getWebhookInfo")
         status = await status.json()
         if status["ok"] == True:

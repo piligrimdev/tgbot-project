@@ -47,8 +47,7 @@ def parseUrlParams(url):
     return dict(parse.parse_qsl(parse.urlsplit(url).query))
 
 class Spotify:
-    def __init__(self, time):
-        self.time = time
+    def __init__(self):
         self.session = aiohttp.ClientSession()
         self.apiUrl = 'https://api.spotify.com/v1/'
         self.headers = {
