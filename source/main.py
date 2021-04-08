@@ -53,10 +53,9 @@ async def check(request):
 
 
 async def main(loop):
-    status = ""
     bot.set_loop = loop
     if os.environ.get("HEROKU") is not None:
-        status = await bot.check_webhook()
+        status = bot.check_webhook()
         if status == True:
 
             handler = HelloHandler("https://tgbotproject.herokuapp.com/callback/")
@@ -85,20 +84,80 @@ async def main(loop):
         print("LOCAL MACHINE")
         status = await bot.delete_webhook()
         if status:
+            handler = HelloHandler("https://localhost:8080/")
+            bot.add_handler(handler)
+            handler1 = AuthHandler("https://localhost:8080/")
+            bot.add_auth_handler(handler1)
+
+            config["isWebHookOk"] = 0
+            conf_file = open("Bot/bot_config.json", "w")
+            json.dump(config, conf_file)
+            conf_file.close()
+            app = web.Application()
+            app.router.add_get("/callback/", check_auth)
+
+            await asyncio.gather(aiohttp.web._run_app(app), temp(bot))
+        else:
+            print(status)
+
+async def temp(bot):
+    while True:
+        updates = await bot.getUpdates()
+        if updates is not None:
+            await bot.procceed_updates(updates)
+
+if __name__ == "__main__":
+    ioloop = asyncio.get_event_loop()
+
+    app = web.Application()
+    app.router.add_post("/" + config["token"] + "/", check)
+    app.router.add_get("/callback/", check_auth)
+    app_handler = app.make_handler()
+
+    bot.set_loop = ioloop
+
+    task = None
+    if os.environ.get("HEROKU") is not None:
+        status = bot.check_webhook()
+        if status == True:
+
+            handler = HelloHandler("https://tgbotproject.herokuapp.com/callback/")
+            bot.add_handler(handler)
+            handler1 = AuthHandler("https://tgbotproject.herokuapp.com/callback/")
+            bot.add_auth_handler(handler1)
+
+            print("WEBHOOK OK")
+            config["isWebHookOk"] = 1
+            conf_file = open("source/Bot/bot_config.json", "w")
+            json.dump(config, conf_file)
+            conf_file.close()
+        else:
+            print("WEBHOOK NOT OK: " + status)
+            config["isWebHookOk"] = 0
+            conf_file = open("source/Bot/bot_config.json", "w")
+            json.dump(config, conf_file)
+            conf_file.close()
+    else:
+        print("LOCAL MACHINE")
+        status = bot.delete_webhook()
+        if status:
+            PORT = 8080
+            handler = HelloHandler("http://localhost:8080/callback/")
+            bot.add_handler(handler)
+            handler1 = AuthHandler("http://localhost:8080/callback/")
+            bot.add_auth_handler(handler1)
+
             config["isWebHookOk"] = 0
             conf_file = open("Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
 
-            handler = LocalHelloHandler('localhost', 8080, "https://localhost:8080/")
-            bot.add_handler(handler)
-            while True:
-                updates = await bot.getUpdates()
-                if updates is not None:
-                    await bot.procceed_updates(updates)
+            task = temp(bot)
         else:
             print(status)
-if __name__ == "__main__":
-    ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(main(ioloop))
-    ioloop.close()
+
+    server = ioloop.create_server(app_handler, '0.0.0.0', PORT)
+    srv = ioloop.run_until_complete(server)
+    if task:
+        asyncio.ensure_future(task)
+    ioloop.run_forever()

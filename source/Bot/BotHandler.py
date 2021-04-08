@@ -25,19 +25,26 @@ class BaseHandler(metaclass=HandlerMeta):
         pass
 
 class HelloHandler:
+
+    queryNum = 1
+
     def __init__(self, url):
         self.onStatus = 0
         self.onString = ""
         self.url = url
+
     async def handle(self, bot, message):
         print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
         if 'username' in message['from'].keys():
             greetStr = "Привет, {}!".format(message['from']['username'])
         else:
             greetStr = "Привет!"
-        await bot.sendMessage(message['from']['id'], greetStr)
-        await bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста")
-        await bot.sendMessage(message['from']['id'], "Для начала, мне нужно авторизовать тебя в Spotify")
+        await bot.sendMessage(message['from']['id'], greetStr + str(HelloHandler.queryNum))
+        HelloHandler.queryNum += 1
+        await bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста "+ str(HelloHandler.queryNum))
+        HelloHandler.queryNum += 1
+        await bot.sendMessage(message['from']['id'], "Для начала, мне нужно авторизовать тебя в Spotify "+ str(HelloHandler.queryNum))
+        HelloHandler.queryNum += 1
 
         with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
@@ -108,7 +115,6 @@ class AuthHandler:
         self.onString = ""
         self.url = url
     async def handle(self, bot, message):
-        print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
         with  open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
         spotify = bot.user_spotify[int(message['state'])]
@@ -220,12 +226,12 @@ class BotHandler:
     async def sendMessage(self, id, text):
         return await self.session.post(self.url + "sendMessage", params={"chat_id": id, "text": text})
 
-    async def check_webhook(self):
+    def check_webhook(self):
         print("Checking webhook in file")
         if self.config["isWebHookOk"] == 1:
             print("     File says its ok")
-            status = await self.session.get(self.url + "getWebhookInfo")
-            status = await status.json()
+            status = requests.get(self.url + "getWebhookInfo")
+            status = status.json()
             print(status)
             if status["ok"]:
                 return True
@@ -233,21 +239,21 @@ class BotHandler:
                 return False
         else:
             print("     Its not ok in file")
-            status = await self.session.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + "/" + self.config["token"] + "/")
-            status = await status.json()
+            status = requests.get(self.url + "setWebhook?url=" + self.config["webhook_url"] + "/" + self.config["token"] + "/")
+            status = status.json()
             print(status)
             if status["ok"]:
                 return True
             else:
                 return status["error_code"]
 
-    async def delete_webhook(self):
-        status = await self.session.get(self.url + "getWebhookInfo")
-        status = await status.json()
-        if status["ok"] == True:
-            status = await self.session.get(self.url + "deleteWebhook")
-            status = await status.json()
-            if status["ok"] == True:
+    def delete_webhook(self):
+        status = requests.get(self.url + "getWebhookInfo")
+        status = status.json()
+        if status["ok"]:
+            status = requests.get(self.url + "deleteWebhook")
+            status = status.json()
+            if status["ok"]:
                 return True
             else:
                 return status["error_code"]

@@ -188,7 +188,6 @@ class Spotify:
                 json = await data.json()
                 for i in json['items']:
                     track_list.append(i['track']["uri"])
-                    await asyncio.sleep(1)
                 if json['next'] is not None:
                     nextStr = json['next']
                 else:
@@ -210,7 +209,6 @@ class Spotify:
                 json = await data.json()
                 for i in json['items']:
                     track_list.append({'track': i['track']["uri"], 'artist': i['track']['artists'][0]["uri"]})
-                    await asyncio.sleep(1)
                     # artists_list.append(i['track']['artists'][0]["uri"])
                 if json['next'] is not None:
                     nextStr = json['next']
@@ -246,7 +244,6 @@ class Spotify:
                 item['artist'] = i['id']
                 item['genres'] = i['genres']
                 artists_list.append(item)
-                await asyncio.sleep(1)
             return artists_list
         else:
             print(data)
@@ -360,7 +357,6 @@ async def similar_artists(spotify, artists) -> list:
             await asyncio.sleep(1)
 
         listSim.append(sim)
-        await asyncio.sleep(1)
     """    
     for i in listSim:
         for j in i:
@@ -377,7 +373,7 @@ async def average_audio_features(spotify, data) -> dict:
     for i in data:
         i = i['track'].split(':')[2]
         try:
-            json = await spotify.audio_features(i).json()
+            json = (await spotify.audio_features(i)).json()
             if 'error' not in json.keys():
                 features_json = dict()
                 features_json['energy'] = json["energy"]
@@ -393,7 +389,6 @@ async def average_audio_features(spotify, data) -> dict:
                 break
         except Exception as e:
             print(e)
-        await asyncio.sleep(1)
 
     count = len(data)
     sum_features = {
@@ -408,7 +403,6 @@ async def average_audio_features(spotify, data) -> dict:
             if key == "uri":
                 continue
             sum_features[key] += i[key]
-    await asyncio.sleep(1)
 
     aver_features = {
         "energy": 0,
@@ -446,7 +440,6 @@ async def playlist_recommnedation_tracks(spotify, data, sim_artists, aver_featur
                 seed_artists += item1 + ','
 
                 counter += 1
-                await asyncio.sleep(1)
             else:
                 seed_tracks = seed_tracks[:-1]
                 seed_artists = seed_artists[:-1]
@@ -470,7 +463,6 @@ async def playlist_recommnedation_tracks(spotify, data, sim_artists, aver_featur
                 counter = 0
                 seed_tracks = str()
                 seed_artists = str()
-                await asyncio.sleep(1)
 
         if len(seed_tracks) != 0:
             seed_tracks = seed_tracks[:-1]
