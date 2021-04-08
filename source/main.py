@@ -52,8 +52,9 @@ async def check(request):
     return web.Response()
 
 
-async def main():
+async def main(loop):
     status = ""
+    bot.set_loop = loop
     if os.environ.get("HEROKU") is not None:
         status = await bot.check_webhook()
         if status == True:
@@ -89,9 +90,7 @@ async def main():
             json.dump(config, conf_file)
             conf_file.close()
 
-            handler = HelloHandler("https://localhost/callback/")
-            handler1 = AuthHandler("https://localhost/callback/")
-            bot.add_auth_handler(handler1)
+            handler = LocalHelloHandler('localhost', 8080, "https://localhost:8080/")
             bot.add_handler(handler)
             while True:
                 updates = await bot.getUpdates()
@@ -101,5 +100,5 @@ async def main():
             print(status)
 if __name__ == "__main__":
     ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(main())
+    ioloop.run_until_complete(main(ioloop))
     ioloop.close()

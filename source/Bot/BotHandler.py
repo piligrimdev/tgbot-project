@@ -59,6 +59,49 @@ class HelloHandler:
             bot.dialog_status[message['from']['id']] = 1
             return True
 
+
+class LocalHelloHandler:
+    def __init__(self, host, port, url):
+        self.onStatus = 0
+        self.onString = ""
+        self.host = host
+        self.port = port
+        self.url = url
+
+    async def handle(self, bot, message):
+
+        print('In ' + str(type(self)) + "for id: " + str(message['from']['id']))
+
+        if 'username' in message['from'].keys():
+            greetStr = "Привет, {}!".format(message['from']['username'])
+        else:
+            greetStr = "Привет!"
+        await bot.sendMessage(message['from']['id'], greetStr)
+        await bot.sendMessage(message['from']['id'], "Я - бот, который подберет тебе плейлист на основе твоего плейлиста")
+        await bot.sendMessage(message['from']['id'], "Для начала, мне нужно авторизовать тебя в Spotify")
+
+        with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
+            conf = json.load(file)
+
+        spotify = Spotify()
+        link = await spotify.getAuthLink(conf, self.url,
+                                   'playlist-modify-public', message['from']['id'])
+        await bot.sendMessage(message['from']['id'], str(link))
+        await asyncio.sleep(1)
+        await spotify.localUserAuth(conf, self.host, self.port, self.url)
+
+        bot.user_spotify[message['from']['id']] = spotify
+
+    def canHandle(self, bot, message):
+        if message['from']['id'] in bot.dialog_status.keys():
+            if self.onString in message['text'] and bot.dialog_status[message['from']['id']] == self.onStatus:
+                return True
+            else:
+                return False
+        else:
+            bot.dialog_status[message['from']['id']] = 1
+            return True
+
 class AuthHandler:
     def __init__(self, url):
         self.onStatus = 0
@@ -79,7 +122,6 @@ class AuthHandler:
 
     def canHandle(self, bot, message):
         return True
-
 
 class PlaylistHandler:
     def __init__(self):
@@ -115,6 +157,7 @@ class BotHandler:
         self.lastUpdateId = self.config["lastUpdateId"]
         self.debug = self.config["lastUpdateId"]
         self.session = aiohttp.ClientSession()
+        self.loop = ""
 
     async def getUpdates(self):
         update = await self.session.get(self.url + "getUpdates")
@@ -153,19 +196,26 @@ class BotHandler:
         else:
             print("{} is not fully implements BaseHandler interface".format(type(handler)))
 
+    def set_loop(self, loop):
+        self.loop = loop
+
     async def procceed_updates(self, updates):
+        tasks = list()
         for i in updates:
             if 'message' in i.keys():
                 for j in self.handlers:
                     if j.canHandle(self, i['message']):
                         print('update from ' + str(i['message']['from']['id']))
-                        await j.handle(self, i['message'])
+                        tasks.append(j.handle(self, i['message']))
                         break
             elif 'type' in i.keys():
                 for j in self.auth_handlers:
                     if j.canHandle(self, i):
-                        await j.handle(self, i)
+                        tasks.append(j.handle(self, i))
                         break
+        for i in tasks:
+            asyncio.ensure_future(i)
+
 
     async def sendMessage(self, id, text):
         return await self.session.post(self.url + "sendMessage", params={"chat_id": id, "text": text})

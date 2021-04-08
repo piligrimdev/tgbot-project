@@ -7,6 +7,7 @@ import base64
 from urllib import parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.server.code = parseUrlParams(self.path)['code']
@@ -43,8 +44,10 @@ def listOfTracks(data):
         print(name + " By " + artists + ": " + link)
     return uris
 
+
 def parseUrlParams(url):
     return dict(parse.parse_qsl(parse.urlsplit(url).query))
+
 
 class Spotify:
     def __init__(self):
@@ -75,9 +78,9 @@ class Spotify:
         }
 
         data = await self.session.post('https://accounts.spotify.com/api/token',
-                                 data=payload,
-                                 headers=headers
-                                 )
+                                       data=payload,
+                                       headers=headers
+                                       )
 
         if data.ok:
             self.authToken = (await data.json())['access_token']
@@ -99,34 +102,64 @@ class Spotify:
 
         return (await self.session.get("https://accounts.spotify.com/authorize", params=payload)).url
 
+    async def localUserAuth(self, conf, host, port, redirect):
+        server = HTTPServer((host, port), RequestHandler)
+        server.code = None
+
+        server.handle_request()
+
+        s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
+        utf = s.encode("utf-8")
+        byt = base64.b64encode(utf).decode('utf-8')
+
+        payload = {
+            "grant_type": "authorization_code",
+            "code": server.code,
+            "redirect_uri": redirect
+        }
+
+        headers = self.headers
+        headers['Authorization'] = 'Basic {}'.format(byt)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+        data = await self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
+
+        if data.ok:
+            self.refreshToken = (await data.json())['refresh_token']
+            self.authToken = (await data.json())['access_token']
+            self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
+            return True
+        else:
+            error = json.loads(data.reason)
+            print(error['error'] + ': ' + error['error_description'])
+            return False
+
     async def userAuth(self, conf, redirect, code):
 
-            s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
-            utf = s.encode("utf-8")
-            byt = base64.b64encode(utf).decode('utf-8')
+        s = "{}:{}".format(conf['CLIENT_ID'], conf['CLIENT_SECRET'])
+        utf = s.encode("utf-8")
+        byt = base64.b64encode(utf).decode('utf-8')
 
-            payload = {
-                    "grant_type": "authorization_code",
-                    "code": code,
-                    "redirect_uri": redirect
-                }
+        payload = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect
+        }
 
-            headers = self.headers
-            headers['Authorization'] = 'Basic {}'.format(byt)
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        headers = self.headers
+        headers['Authorization'] = 'Basic {}'.format(byt)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-            data = await self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
+        data = await self.session.post('https://accounts.spotify.com/api/token', data=payload, headers=headers)
 
-            if data.ok:
-                self.refreshToken = (await data.json())['refresh_token']
-                self.authToken =  (await data.json())['access_token']
-                self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
-                return True
-            else:
-                print((await data.reason)['error'] + ': ' + (await data.reason)['error_description'])
-                return False
-
-
+        if data.ok:
+            self.refreshToken = (await data.json())['refresh_token']
+            self.authToken = (await data.json())['access_token']
+            self.headers['Authorization'] = 'Bearer {token}'.format(token=self.authToken)
+            return True
+        else:
+            print((await data.reason)['error'] + ': ' + (await data.reason)['error_description'])
+            return False
 
     async def audio_features(self, id):
         return await self.session.get(self.apiUrl + "audio-features/{0}".format(id), headers=self.headers)
@@ -172,13 +205,13 @@ class Spotify:
         nextStr = self.apiUrl + "playlists/" + playlist_id + "/tracks"
         track_list = list()
         while True:
-            data = await self.session.get(nextStr, params=payload,  headers=self.headers)
+            data = await self.session.get(nextStr, params=payload, headers=self.headers)
             if data.ok:
                 json = await data.json()
                 for i in json['items']:
                     track_list.append({'track': i['track']["uri"], 'artist': i['track']['artists'][0]["uri"]})
                     await asyncio.sleep(1)
-                    #artists_list.append(i['track']['artists'][0]["uri"])
+                    # artists_list.append(i['track']['artists'][0]["uri"])
                 if json['next'] is not None:
                     nextStr = json['next']
                 else:
@@ -189,15 +222,15 @@ class Spotify:
 
     async def track_recommendation(self, parms):
         if "seed_artist" in parms.keys() or \
-            "seed_genres" in parms.keys() or \
+                "seed_genres" in parms.keys() or \
                 "seed_tracks" in parms.keys():
-                    data = await self.session.get(self.apiUrl + "recommendations", params=parms, headers=self.headers)
-                    js = await data.json()
-                    if data.ok:
-                        return js
-                    else:
-                        print(js['error'])
-                        return dict()
+            data = await self.session.get(self.apiUrl + "recommendations", params=parms, headers=self.headers)
+            js = await data.json()
+            if data.ok:
+                return js
+            else:
+                print(js['error'])
+                return dict()
         else:
             print("Seed artists, genres, or tracks required")
             return None
@@ -257,7 +290,8 @@ class Spotify:
                 uris.append(i)
                 counter += 1
             else:
-                response1 = await self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',json={"uris": uris, 'position': '0'}, headers=self.headers)
+                response1 = await self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',
+                                                    json={"uris": uris, 'position': '0'}, headers=self.headers)
 
                 if not response1.ok:
                     error = json.loads(await response1.reason)
@@ -269,17 +303,19 @@ class Spotify:
 
         if len(uris) != 0:
             response1 = await self.session.post(self.apiUrl + "playlists/" + playlistId + '/tracks',
-                                          json={"uris": uris, 'position': '0'}, headers=self.headers)
+                                                json={"uris": uris, 'position': '0'}, headers=self.headers)
 
             if not response1.ok:
                 error = json.loads(response1.reason)
                 print(error['error'] + ': ' + error['error_description'])
+
 
 def Jaccard(setA, setB) -> float:
     if len(setA) != 0 and len(setB) != 0:
         return len(setA.intersection(setB)) / len(setA.union(setB))
     else:
         return 0
+
 
 async def similar_artists(spotify, artists) -> list:
     uniqeArtists = list(set(artists))
@@ -303,7 +339,7 @@ async def similar_artists(spotify, artists) -> list:
                 for z in related1:
                     l1.append(z['artist'])
                 for z in related2:
-                        l2.append(z['artist'])
+                    l2.append(z['artist'])
                 setSim = Jaccard(set(l1), set(l2))
                 if setSim >= 0.3:
                     sim.append(uniqeArtists[j])
@@ -335,6 +371,7 @@ async def similar_artists(spotify, artists) -> list:
     """
     return listSim
 
+
 async def average_audio_features(spotify, data) -> dict:
     tracks_features = list()
     for i in data:
@@ -350,7 +387,7 @@ async def average_audio_features(spotify, data) -> dict:
                 features_json["valence"] = json["valence"]
                 features_json["uri"] = json["uri"]
                 tracks_features.append(features_json)
-                #print(i + ' checked')
+                # print(i + ' checked')
             else:
                 print(json['error'])
                 break
@@ -388,6 +425,7 @@ async def average_audio_features(spotify, data) -> dict:
             print(e)
             return dict()
     return aver_features
+
 
 async def playlist_recommnedation_tracks(spotify, data, sim_artists, aver_features, limit, market) -> list:
     full_uris = list()
@@ -456,8 +494,8 @@ async def playlist_recommnedation_tracks(spotify, data, sim_artists, aver_featur
 
     return full_uris
 
-async def create_based_playlist(spotify, playlist_id, name, public=True, desc="", baseOnMarket=False, limit=5):
 
+async def create_based_playlist(spotify, playlist_id, name, public=True, desc="", baseOnMarket=False, limit=5):
     userData = await spotify.get_user_info()
     userId = userData['id']
 
@@ -466,7 +504,6 @@ async def create_based_playlist(spotify, playlist_id, name, public=True, desc=""
         market = userData['country']
 
     data = await spotify.get_playlist_tracks(playlist_id)
-
 
     artists = list()
 
