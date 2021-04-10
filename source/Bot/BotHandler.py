@@ -4,6 +4,7 @@ import asyncio
 import aiohttp
 import sys
 from source.spotify.SpotifyRequest import *
+from source.spotify.SpotifyRequestAsync import *
 
 class HandlerMeta(type):
     def __instancecheck__(cls, instance):
@@ -15,14 +16,18 @@ class HandlerMeta(type):
                 hasattr(subclass, 'canHandle') and
                 callable(subclass.canHandle))
 
+
 class BaseHandler(metaclass=HandlerMeta):
     def __init__(self):
         self.onStatus = 0
         self.onString = ""
+
     def handle(self,bot, message):
         pass
+
     def canHandle(self, bot, message) -> bool:
         pass
+
 
 class HelloHandler:
 
@@ -49,7 +54,7 @@ class HelloHandler:
         with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
 
-        spotify = Spotify()
+        spotify = SpotifyAsync()
         link = await spotify.getAuthLink(conf, self.url,
                                    'playlist-modify-public', message['from']['id'])
         await bot.sendMessage(message['from']['id'], str(link))
@@ -90,7 +95,7 @@ class LocalHelloHandler:
         with open(sys.path[0] + "/spotify/spotify_config.json", "r") as file:
             conf = json.load(file)
 
-        spotify = Spotify()
+        spotify = SpotifyAsync()
         link = await spotify.getAuthLink(conf, self.url,
                                    'playlist-modify-public', message['from']['id'])
         await bot.sendMessage(message['from']['id'], str(link))
