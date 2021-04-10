@@ -295,10 +295,10 @@ async def similar_artists(spotify, artists) -> list:
                     lightSim.append(uniqeArtists[j])
             await asyncio.sleep(1)
 
-        g1 = spotify.get_artist_genre(id1)
+        g1 = await spotify.get_artist_genre(id1)
         for z in lightSim:
             item = z.split(":")[2]
-            g2 = spotify.get_artist_genre(item)
+            g2 = await spotify.get_artist_genre(item)
             setg1 = set(g1)
             setg2 = set(g2)
             if Jaccard(setg1, setg2) > 0.124:
@@ -323,19 +323,19 @@ async def average_audio_features(spotify, data) -> dict:
     for i in data:
         i = i['track'].split(':')[2]
         try:
-            json = (await spotify.audio_features(i)).json()
-            if 'error' not in json.keys():
+            features = await (await spotify.audio_features(i)).json()
+            if 'error' not in features.keys():
                 features_json = dict()
-                features_json['energy'] = json["energy"]
-                features_json['loud'] = json["loudness"]
-                features_json["dance"] = json["danceability"]
-                features_json["speech"] = json["speechiness"]
-                features_json["valence"] = json["valence"]
-                features_json["uri"] = json["uri"]
+                features_json['energy'] = features["energy"]
+                features_json['loud'] = features["loudness"]
+                features_json["dance"] = features["danceability"]
+                features_json["speech"] = features["speechiness"]
+                features_json["valence"] = features["valence"]
+                features_json["uri"] = features["uri"]
                 tracks_features.append(features_json)
                 # print(i + ' checked')
             else:
-                print(json['error'])
+                print(features['error'])
                 break
         except Exception as e:
             print(e)
