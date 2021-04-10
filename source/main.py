@@ -29,7 +29,7 @@ else:
         config = json.load(conf_file)
         config["webhook_port"] = "8443"
 
-bot = BotHandler(config)
+bot = BotHandlerAsync(config)
 
 handler2 = PlaylistHandler()
 
