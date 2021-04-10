@@ -51,55 +51,7 @@ async def check(request):
     return web.Response()
 
 
-async def main(loop):
-    bot.set_loop = loop
-    if os.environ.get("HEROKU") is not None:
-        status = bot.check_webhook()
-        if status == True:
-
-            handler = HelloHandler("https://tgbotproject.herokuapp.com/callback/")
-            bot.add_handler(handler)
-            handler1 = AuthHandler("https://tgbotproject.herokuapp.com/callback/")
-            bot.add_auth_handler(handler1)
-
-            print("WEBHOOK OK")
-            config["isWebHookOk"] = 1
-            conf_file = open("source/Bot/bot_config.json", "w")
-            json.dump(config, conf_file)
-            conf_file.close()
-
-            app = web.Application()
-            app.router.add_post("/" + config["token"] + "/", check)
-            app.router.add_get("/callback/", check_auth)
-            web.run_app(app, host="0.0.0.0", port=PORT)
-
-        else:
-            print("WEBHOOK NOT OK: " + status)
-            config["isWebHookOk"] = 0
-            conf_file = open("source/Bot/bot_config.json", "w")
-            json.dump(config, conf_file)
-            conf_file.close()
-    else:
-        print("LOCAL MACHINE")
-        status = await bot.delete_webhook()
-        if status:
-            handler = HelloHandler("https://localhost:8080/")
-            bot.add_handler(handler)
-            handler1 = AuthHandler("https://localhost:8080/")
-            bot.add_auth_handler(handler1)
-
-            config["isWebHookOk"] = 0
-            conf_file = open("Bot/bot_config.json", "w")
-            json.dump(config, conf_file)
-            conf_file.close()
-            app = web.Application()
-            app.router.add_get("/callback/", check_auth)
-
-            await asyncio.gather(aiohttp.web._run_app(app), temp(bot))
-        else:
-            print(status)
-
-async def temp(bot):
+async def get_updates(bot):
     while True:
         updates = await bot.getUpdates()
         if updates is not None:
@@ -131,7 +83,6 @@ if __name__ == "__main__":
             json.dump(config, conf_file)
             conf_file.close()
 
-            task = temp(bot)
         else:
             print("WEBHOOK NOT OK: " + status)
             config["isWebHookOk"] = 0
@@ -153,7 +104,7 @@ if __name__ == "__main__":
             json.dump(config, conf_file)
             conf_file.close()
 
-            task = temp(bot)
+            task = get_updates(bot)
         else:
             print(status)
 
