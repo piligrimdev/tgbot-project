@@ -130,6 +130,8 @@ if __name__ == "__main__":
             conf_file = open("source/Bot/bot_config.json", "w")
             json.dump(config, conf_file)
             conf_file.close()
+
+            task = temp(bot)
         else:
             print("WEBHOOK NOT OK: " + status)
             config["isWebHookOk"] = 0
@@ -159,4 +161,7 @@ if __name__ == "__main__":
     srv = ioloop.run_until_complete(server)
     if task:
         asyncio.ensure_future(task)
-    ioloop.run_forever()
+    try:
+        ioloop.run_forever()
+    except Exception as e:
+        print(e)
